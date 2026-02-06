@@ -1,34 +1,18 @@
-import os
-from pathlib import Path
 from weasyprint import HTML
 
 class PDF_Service:
     
-    def __init__(self, output_folder: str = "Downloads"):
-        # Define la ruta donde se guardarán los archivos.
-        self.output_folder = Path.cwd() / output_folder
+    def html_to_pdf(self, html_content, full_path):
         
-        # Crea la carpeta si no existe.
-        if not self.output_folder.exists():
-            self.output_folder.mkdir(parents=True, exist_ok=True)
-            print(f"Carpeta creada: {self.output_folder}")
-
-    def html_to_pdf(self, html_content: str, file_name: str) -> str:
-        #convierte html a pdf.
+       # Recibe el contenido HTML y la ruta COMPLETA donde se guardará.
         try:
-            # Asegurar que el nombre termine en .pdf
-            if not file_name.endswith('.pdf'):
-                file_name += '.pdf'
+            print(f"      ⚙️ Guardando en: {full_path}")
             
-            full_path = self.output_folder / file_name
-            
-            print(f"cargando... '{file_name}'...")
-            
+            # Convierte y guarda directamente en la ruta que nos dio el main
             HTML(string=html_content).write_pdf(target=full_path)
             
-            print(f"Hecho! {full_path}")
-            return str(full_path)
-
+            return True
+            
         except Exception as e:
-            print(f"Error generando PDF: {e}")
+            print(f"      ⚠️ Error crítico en PDF Service: {e}")
             raise e
