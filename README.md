@@ -21,7 +21,8 @@ Antes de instalar, asegúrate de tener:
 1.  **Clonar/Descargar el proyecto** en tu carpeta.
 2.  **Instalar dependencias de Python:**
     ```bash
-    poetry install
+    ---> poetry install
+    ---> poetry run playwright install
     ```
 3.  **Instalar navegadores del robot:**
     ```bash

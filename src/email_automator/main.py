@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 from email_automator.services.auto_login import Autologin
 from email_automator.services.scanner import Scanner
 
-# Cargar configuración
+
 load_dotenv()
 
 def process():
@@ -15,8 +15,8 @@ def process():
     email = os.getenv("EMAIL_USER")
     password = os.getenv("EMAIL_PASS")
     
-    # Aquí pon tu ruta de escritorio
-    carpeta_pdfs = r"C:\Users\angel\Documents\PDFs"
+    # CAMBIA LA RUTA
+    carpeta_pdfs = r"C:\Users\AngelDamianAvelarZep\Documents\PDFs"
 
     if not email or not password:
         print("### ---> ERROR: Faltan credenciales en .env")
@@ -35,10 +35,20 @@ def process():
         # Ejecutar Login
         auth.login(email, password)
 
-        # Preparar Interfaz (Ir al inicio)
-        time.sleep(2)
-        page.keyboard.press("Home")
-        time.sleep(2)
+        # Ir al inicio tiempo de espera
+        time.sleep(4)
+
+        try:
+            # Buscamos la lista de correos (listbox) y dentro, la primera opción
+            lista_correos = page.locator('div[role="listbox"]')
+            primer_correo = lista_correos.locator('div[role="option"]').first
+            
+            # Forzamos la espera hasta que aparezca
+            primer_correo.wait_for(timeout=3000)
+            time.sleep(1)
+        except:
+            print("### ---> No pude hacer clic en la lista, intentando solo Home...")
+        time.sleep(3)
 
         # Bucle Principal de Trabajo
         contador = 0

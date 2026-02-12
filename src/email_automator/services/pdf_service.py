@@ -3,7 +3,7 @@ from pathlib import Path
 from weasyprint import HTML
 
 class PDF_Service:
-
+    
     def html_to_pdf(self, html_content: str, output_path: str) -> str:
         #convierte html a pdf.
         try:
