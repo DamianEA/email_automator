@@ -1,6 +1,8 @@
 import time
 import os
 import re
+import base64
+from pathlib import Path
 
 from datetime import datetime
 from playwright.sync_api import Page
@@ -38,74 +40,76 @@ class Scanner:
         try:
             elem = self.page.locator('div[role="heading"][aria-level="2"]').first
             if elem.is_visible():
-                return self._limpiar_nombre(elem.inner_text())
+                return self.cls(elem.inner_text())
         except:
             pass
         return "sin_asunto"
 
 #////////     (LOTE) PROCESO DE AGRUPAR, CONTAR, EJECUTAR    /////////////////////////////////////////////////////////////////
     def lote(self, contador, cantidad=5):
-        print(f"\n---> Procesando lote de {cantidad} correos (Modo Preciso) ---")
+        print(f"\n---> Procesando lote de {cantidad} correos ---\n")
         
         procesados = 0
         
-        # Usamos un while true protegido para navegar la cantidad solicitada
+
         while procesados < cantidad:
-            time.sleep(0.5) # Pequeña pausa para que JS reaccione
-
-            # PASO 2: ¿Es una etiqueta?
-            if self.browser.etiqueta(): 
-                continue # Reinicia el ciclo sin contar este como correo procesado
-
-            # Si llegamos aquí, ES UN CORREO REAL
-            numero_correo = contador + 1
-            print(f"---> Procesando correo #{numero_correo}...")
-
-            time.sleep(1)
-
-#///////////////////////////////////////////////////////////////////////////////////////////
-            # Limpieza Visual
+            time.sleep(0.5) 
+            
+            # VALIDACIÓN: ¿Es encabezado?
+            if self.browser.etiqueta():
+                print("---> Es un encabezado/grupo. Bajando...")
+                self.browser.page.keyboard.press("ArrowDown")
+                continue # Reinicia el bucle, no cuenta nada
+            # PREPARACIÓN
+            print(f"---> ...Procesando correo {contador + 1}...")
+            time.sleep(2) # Espera carga
+            
+            # Limpieza visual (Expandir, quitar basura)
             elemento_a_capturar = self.format.make_format()
 
-            # PASO 5: Captura
-            ruta_img, ruta_str = self.capture.tomar_foto(elemento_a_capturar, procesados)
+            # CAPTURA (Usando TU servicio, no manual)
+            # Esto guarda en Documents/PDFs/temp
+            ruta_img, ruta_str = self.capture.tomar_foto(elemento_a_capturar, contador)
 
-            # PASO 6: Generación de PDF
-            exito = False
+            # DECISIÓN: ¿Hay foto? -> Hay PDF
             if ruta_img and ruta_img.exists():
-                asunto = self.asunto()
                 
-                # Crear HTML
-                ruta_uri = ruta_img.resolve().as_uri()
-                html = f"""
-                <!DOCTYPE html><html><head><style>
-                    @page {{ size: A4; margin: 0; }}
-                    body {{ margin: 0; padding: 0; }}
-                    img {{ width: 100%; height: auto; display: block; }}
-                </style></head><body><img src="{ruta_uri}"></body></html>
-                """
-
+                # --- A. Generar PDF ---
+                asunto_clean = self.asunto()
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                nombre_pdf = f"{numero_correo:03d}_{timestamp}_{asunto}.pdf"
+                nombre_pdf = f"{contador+1:03d}_{timestamp}_{asunto_clean}.pdf"
                 ruta_pdf = os.path.join(self.carpeta_salida, nombre_pdf)
+
+                ruta_uri = ruta_img.resolve().as_uri()
+                
+                html = f"""
+                <!DOCTYPE html><html><body style="margin:0; padding:0;">
+                    <img src="{ruta_uri}" style="width: 100%; display: block;">
+                </body></html>
+                """
 
                 try:
                     self.pdf_service.html_to_pdf(html, ruta_pdf)
-                    print(f"---> PDF Guardado: {nombre_pdf}")
-                    exito = True
+                    print(f"---> PDF Guardado: {nombre_pdf}\n")
+
+                    # Solo aquí contamos y borramos temporal
+                    self.capture.limpiar_foto(ruta_str)
+                    procesados += 1
+                    contador += 1
+                    
+                    # Avanzamos al siguiente correo
+                    self.browser.next()
+
                 except Exception as e:
-                    print(f"---> Error guardando PDF: {e}")
+                    print(f"### ---> Error generando PDF: {e}\n")
+                    self.browser.page.keyboard.press("ArrowDown")
 
-                self.capture.limpiar_foto(ruta_str)
             else:
-                print("---> La captura salió vacía o falló.")
+                # --- C. FALLO DE FOTO ---
+                print("\n### ---> La captura falló o salió vacía. Saltando...\n")
+                self.browser.page.keyboard.press("ArrowDown")
 
-            # PASO 7: Bajar al siguiente (Solo si procesamos un correo)
-            self.browser.next()
-            
-            # Actualizamos contadores
-            procesados += 1
-            contador += 1
+            time.sleep(0.5)
 
         return contador
     

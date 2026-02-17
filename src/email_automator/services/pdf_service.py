@@ -13,9 +13,9 @@ class PDF_Service:
             
             HTML(string=html_content).write_pdf(target=output_path)
             
-            print(f"Hecho! {output_path}")
+            print(f"---> HECHO:{output_path}")
             return str(output_path)
 
         except Exception as e:
-            print(f"Error generando PDF: {e}")
+            print(f"### ---> Error generando PDF: {e}")
             raise e

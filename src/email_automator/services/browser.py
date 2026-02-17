@@ -25,18 +25,25 @@ class Browser:
             time.sleep(1)
 
 #///////////////////////////////////////////////////////////////////////////////////////////////
-    def etiqueta(self): # Salta las etiquetas de la barra de correos
-                    
+    def etiqueta(self): # Salta las etiquetas de la barra de correos      
         try:
-            texto = self.page.locator("div.outer div.inner").inner_text()
+            # Estrategia combinada (Tu idea del <i> + atributos de seguridad)
+            es_tag = self.page.evaluate("""() => {
+                const el = document.activeElement;
+                if (!el) return false;
+                
+                // 1: Buscar la etiqueta <i> (ícono chevron) dentro del div
+                const tieneIconoColapso = el.querySelector('i[data-icon-name*="Chevron"]') !== null;
+                
+                // 2: Los headers tienen aria-expanded (true/false)
+                const esDesplegable = el.getAttribute('aria-expanded') !== null;
+                
+                // 3: Los headers suelen ser botones
+                const esBoton = el.getAttribute('role') === 'button';
+                return tieneIconoColapso || esDesplegable || esBoton;
+            }""")
             
-            etiquetas_comunes = ["Today", "Yesterday", "Last week", "Last month", "Older", 
-                                "Hoy", "Ayer", "La semana pasada", "El mes pasado"]
-            print(self.page.evaluate("document.activeElement.outerHTML"))
-            txt_limpio = texto.split('\n')[0].strip() if texto else ""
-
-            if txt_limpio in etiquetas_comunes:
-                    return True, self.page.keyboard.press("ArrowDown")
-            return False
-        except:
+            return es_tag
+        except Exception as e:
+            print(f"Error validando elemento: {e}")
             return False
