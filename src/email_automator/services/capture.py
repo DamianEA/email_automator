@@ -18,8 +18,34 @@ class Capture:
         ruta_str = str(ruta_imagen.resolve())
 
         try:
-            # Intento 1 Foto al elemento específico
-            if elemento:
+            # Foto al elemento específico
+            if elemento and elemento.count() > 0:
+                selector_str = "div[aria-label='Email message']"
+
+                # Inyectamos JS para forzar que el contenedor muestre todo su contenido
+                self.page.evaluate("""(selector) => {
+                    const root = document.querySelector("div[aria-label='Email message']") || document.getElementById("focused");
+                    if (!root) return;
+                    console.log("Expandiendo elemento:", root);
+                    const expandir = (el) => {
+
+                        el.style.height = 'auto'; 
+                        el.style.maxHeight = 'none';
+                        el.style.overflow = 'visible';
+                        el.style.display = 'block';
+                    };
+                    expandir(root);
+                    
+                    const hijos = root.querySelectorAll('div');
+                    hijos.forEach(h => {
+                        if(h.scrollHeight > h.clientHeight) {
+                            expandir(h);
+                        }
+                    });
+
+                }""", selector_str)
+                self.page.wait_for_timeout(1000)
+
                 elemento.screenshot(path=ruta_str, type='png', animations="disabled")
             else:
                 raise Exception("Elemento nulo")
@@ -40,4 +66,4 @@ class Capture:
             else:
                 pass
         except Exception as e:
-            print(f"### ---> Error limpiando foto temporal: {e}")            
+            print(f"### ---> Error limpiando foto temporal: {e}")         

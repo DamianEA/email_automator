@@ -45,41 +45,39 @@ class Scanner:
             pass
         return "sin_asunto"
 
-#////////     (LOTE) PROCESO DE AGRUPAR, CONTAR, EJECUTAR    /////////////////////////////////////////////////////////////////
+#////////     (LOTE) PROCESO DE AGRUPAR, CONTAR, EJECUTAR    ///////////////////////////////////////////
     def lote(self, contador, cantidad=5):
         print(f"\n---> Procesando lote de {cantidad} correos ---\n")
         
         procesados = 0
-        
+
 
         while procesados < cantidad:
             time.sleep(0.5) 
             
-            # VALIDACIÓN: ¿Es encabezado?
+            # VALIDACIÓN
             if self.browser.etiqueta():
-                print("---> Es un encabezado/grupo. Bajando...")
+                print("---> Es un encabezado/grupo. Bajando...\n")
                 self.browser.page.keyboard.press("ArrowDown")
-                continue # Reinicia el bucle, no cuenta nada
+                continue # Reinicia el bucle
             # PREPARACIÓN
             print(f"---> ...Procesando correo {contador + 1}...")
-            time.sleep(2) # Espera carga
+            time.sleep(3) # Espera carga
             
-            # Limpieza visual (Expandir, quitar basura)
-            elemento_a_capturar = self.format.make_format()
-
-            # CAPTURA (Usando TU servicio, no manual)
-            # Esto guarda en Documents/PDFs/temp
-            ruta_img, ruta_str = self.capture.tomar_foto(elemento_a_capturar, contador)
-
-            # DECISIÓN: ¿Hay foto? -> Hay PDF
+            # Limpieza visual
+            self.format.make_format()
+            # CAPTURA
+            panel_lectura = self.browser.page.locator("div[role='main']")
+            ruta_img, ruta_str = self.capture.tomar_foto(panel_lectura, contador)
+            # DECISIÓN
             if ruta_img and ruta_img.exists():
                 
-                # --- A. Generar PDF ---
+#/////////////// ---  Generar PDF ---/////////////////////////////////////////////////////////////
                 asunto_clean = self.asunto()
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 nombre_pdf = f"{contador+1:03d}_{timestamp}_{asunto_clean}.pdf"
                 ruta_pdf = os.path.join(self.carpeta_salida, nombre_pdf)
-
+                
                 ruta_uri = ruta_img.resolve().as_uri()
                 
                 html = f"""
@@ -92,24 +90,24 @@ class Scanner:
                     self.pdf_service.html_to_pdf(html, ruta_pdf)
                     print(f"---> PDF Guardado: {nombre_pdf}\n")
 
-                    # Solo aquí contamos y borramos temporal
+                    # aquí cuenta y borramos temporal
                     self.capture.limpiar_foto(ruta_str)
                     procesados += 1
                     contador += 1
                     
-                    # Avanzamos al siguiente correo
+                    # Avanza al siguiente correo
                     self.browser.next()
 
                 except Exception as e:
                     print(f"### ---> Error generando PDF: {e}\n")
                     self.browser.page.keyboard.press("ArrowDown")
-
+#//////////////////////////////////////////////////////////////////////////////////////////////////////
             else:
-                # --- C. FALLO DE FOTO ---
+
                 print("\n### ---> La captura falló o salió vacía. Saltando...\n")
                 self.browser.page.keyboard.press("ArrowDown")
 
             time.sleep(0.5)
 
         return contador
-    
+

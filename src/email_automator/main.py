@@ -37,14 +37,14 @@ def process():
         auth.login(email, password)
 
         # Ir al inicio tiempo de espera
-        time.sleep(3)
+        time.sleep(5)
 
         try:
             # Buscamos la lista de correos (listbox) y dentro, la primera opción
             lista_correos = page.locator('div[role="listbox"]')
             primer_correo = lista_correos.locator('div[role="option"]').first
             
-            # Forzamos la espera hasta que aparezca
+
             primer_correo.wait_for(timeout=3000)
             time.sleep(1)
         except:
